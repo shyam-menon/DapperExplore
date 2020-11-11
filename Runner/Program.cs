@@ -16,7 +16,7 @@ namespace Runner
             Initialize();
 
             //1. Get
-            // Get_all_should_return_6_results();
+            Get_all_should_return_6_results();
 
             //2. Insert
             var id = Insert_should_assign_identity_to_new_entity();
@@ -26,6 +26,11 @@ namespace Runner
             Modify_should_update_existing_entity(id);
             //5. Delete the record
             Delete_should_remove_entity(id);
+
+            ////6. Get the multiple addresses for a contact. Complex object
+            var repository = CreateRepository();
+            var mj = repository.GetFullContact(1);
+            mj.Output();
 
         }
 
@@ -68,8 +73,10 @@ namespace Runner
             contact.Addresses.Add(address);
 
             // act
-            repository.Add(contact);
-            //repository.Save(contact);
+            //repository.Add(contact);
+
+            //Complex object save
+            repository.Save(contact);
 
             // assert
             Debug.Assert(contact.Id != 0);
@@ -85,16 +92,18 @@ namespace Runner
             IContactRepository repository = CreateRepository();
 
             // act
-            var contact = repository.Find(id);
-            //var contact = repository.GetFullContact(id);
+            //var contact = repository.Find(id);
+            
+            //Complex object retrieval
+            var contact = repository.GetFullContact(id);
 
             // assert
             Console.WriteLine("*** Get Contact ***");
             contact.Output();
             Debug.Assert(contact.FirstName == "Joe");
             Debug.Assert(contact.LastName == "Blow");
-            //Debug.Assert(contact.Addresses.Count == 1);
-            //Debug.Assert(contact.Addresses.First().StreetAddress == "123 Main Street");
+            Debug.Assert(contact.Addresses.Count == 1);
+            Debug.Assert(contact.Addresses.First().StreetAddress == "123 Main Street");
         }
 
         //4. Modify a record
@@ -104,23 +113,25 @@ namespace Runner
             IContactRepository repository = CreateRepository();
 
             // act
-            var contact = repository.Find(id);
-            //var contact = repository.GetFullContact(id);
+            //var contact = repository.Find(id);
+            var contact = repository.GetFullContact(id);
             contact.FirstName = "Bob";
-            //contact.Addresses[0].StreetAddress = "456 Main Street";
-            repository.Update(contact);
-            //repository.Save(contact);
+            contact.Addresses[0].StreetAddress = "456 Main Street";
+            //repository.Update(contact);
+
+            //Modify a complex object
+            repository.Save(contact);
 
             // create a new repository for verification purposes
             IContactRepository repository2 = CreateRepository();
-            var modifiedContact = repository2.Find(id);
-            //var modifiedContact = repository2.GetFullContact(id);
+            //var modifiedContact = repository2.Find(id);
+            var modifiedContact = repository2.GetFullContact(id);
 
             // assert
             Console.WriteLine("*** Contact Modified ***");
             modifiedContact.Output();
             Debug.Assert(modifiedContact.FirstName == "Bob");
-           // Debug.Assert(modifiedContact.Addresses.First().StreetAddress == "456 Main Street");
+            Debug.Assert(modifiedContact.Addresses.First().StreetAddress == "456 Main Street");
         }
 
         //5. Delete a record
