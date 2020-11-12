@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using DataLayer;
 using Microsoft.Extensions.Configuration;
 
@@ -9,8 +11,10 @@ namespace Runner
 {
     class Program
     {
-        private static IConfigurationRoot config;
-        static void Main(string[] args)
+        private static IConfigurationRoot _config;
+
+        
+        static void Main()
         {
             //Initialize the connection string
             Initialize();
@@ -20,18 +24,45 @@ namespace Runner
 
             //2. Insert
             var id = Insert_should_assign_identity_to_new_entity();
+
             //3. Find a record
             Find_should_retrieve_existing_entity(id);
+
             //4. Update the record
             Modify_should_update_existing_entity(id);
+
             //5. Delete the record
             Delete_should_remove_entity(id);
 
-            ////6. Get the multiple addresses for a contact. Complex object
+            //6. Get the multiple addresses for a contact. Complex object
             var repository = CreateRepository();
             var mj = repository.GetFullContact(1);
             mj.Output();
 
+            //7. Usage of WHERE-IN
+            List_support_should_produce_correct_results();
+
+            //8. Usage of WHERE-IN with dynamic 
+            Dynamic_support_should_produce_correct_results();
+
+            //9. Bulk insert usage
+            Bulk_insert_should_insert_4_rows();
+
+            //10. Literal replacements. Only for numeric and boolean types
+            GetIllinoisAddresses();
+
+            //11. Multi mapping to eagerly load objects with parent-child relationships in a single query.
+            Get_all_should_return_6_results_with_addresses();
+        }
+
+        //Rename this method to Main and the Main method to xMain  to test this
+        // ReSharper disable once ArrangeTypeMemberModifiers
+        static async Task XMain(string[] args)
+        {
+            Initialize();
+
+            //12. Using Async for any operations in Dapper. Async versions are available for all methods (query and execute).
+            await Get_all_should_return_6_results_async();
         }
 
         //1. Get
@@ -152,18 +183,126 @@ namespace Runner
             Console.WriteLine("*** Contact Deleted ***");
         }
 
+        //7. Usage of WHERE-IN
+        static void List_support_should_produce_correct_results()
+        {
+            // arrange - Use extras repository
+            var repository = CreateRepositoryEx();
+
+            // act
+            var contacts = repository.GetContactsById(1, 2, 4);
+
+            // assert
+            Debug.Assert(contacts.Count == 3);
+            contacts.Output();
+        }
+
+        //8. Usage of WHERE-IN with dynamic 
+        static void Dynamic_support_should_produce_correct_results()
+        {
+            // arrange
+            var repository = CreateRepositoryEx();
+
+            // act
+            var contacts = repository.GetDynamicContactsById(1, 2, 4);
+
+            // assert
+            Debug.Assert(contacts.Count == 3);
+            Console.WriteLine($"First FirstName is: {contacts.First().FirstName}");
+            contacts.Output();
+        }
+
+        //9. Bulk insert usage
+        static void Bulk_insert_should_insert_4_rows()
+        {
+            // arrange
+            var repository = CreateRepositoryEx();
+            var contacts = new List<Contact>
+            {
+                new Contact { FirstName = "Charles", LastName = "Barkley" },
+                new Contact { FirstName = "Scottie", LastName = "Pippen" },
+                new Contact { FirstName = "Tim", LastName = "Duncan" },
+                new Contact { FirstName = "Patrick", LastName = "Ewing" }
+            };
+
+            // act
+            var rowsAffected = repository.BulkInsertContacts(contacts);
+
+            // assert
+            Console.WriteLine($"Rows inserted: {rowsAffected}");
+            Debug.Assert(rowsAffected == 4);
+        }
+
+        //10. Literal replacements. Only for numeric and boolean types
+        static void GetIllinoisAddresses()
+        {
+            // arrange
+            var repository = CreateRepositoryEx();
+
+            // act
+            var addresses = repository.GetAddressesByState(17);
+
+            // assert
+            Debug.Assert(addresses.Count == 2);
+            addresses.Output();
+        }
+
+        //11. Multi mapping to eagerly load objects with parent-child relationships in a single query.
+        static void Get_all_should_return_6_results_with_addresses()
+        {
+            var repository = CreateRepositoryEx();
+
+            // act
+            var contacts = repository.GetAllContactsWithAddresses();
+
+            // assert
+            Console.WriteLine($"Count: {contacts.Count}");
+            contacts.Output();
+            Debug.Assert(contacts.Count == 6);
+            Debug.Assert(contacts.First().Addresses.Count == 2);
+        }
+
+        //12. Using Async for any operations in Dapper. Async versions are available for all methods (query and execute).
+        static async Task Get_all_should_return_6_results_async()
+        {
+            // arrange
+            var repository = CreateRepositoryEx();
+
+            // act
+            var contacts = await repository.GetAllAsync();
+
+            // assert
+            Console.WriteLine($"Count: {contacts.Count}");
+            Debug.Assert(contacts.Count == 6);
+            contacts.Output();
+        }
+
+       //////////////////////////////////////////Setup code///////////////////////////////////////////////////////////////
+
         private static void Initialize()
         {
             var builder = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
-            config = builder.Build();
+            _config = builder.Build();
         }
 
         private static IContactRepository CreateRepository()
         {
-            return new ContactRepository(config.GetConnectionString("DefaultConnection"));
+            //Using SQL queries
+            //return new ContactRepository(config.GetConnectionString("DefaultConnection"));
+
+            //Using Dapper Contrib
             //return new ContactRepositoryContrib(config.GetConnectionString("DefaultConnection"));
+
+            //Using stored procedures
+            return new ContactRepositorySP(_config.GetConnectionString("DefaultConnection"));
+        }
+
+        //Extras repository - IN Operator with WHERE, dynamic usage, bulk insert
+        private static ContactRepositoryEx CreateRepositoryEx()
+        {
+            return new ContactRepositoryEx(_config.GetConnectionString("DefaultConnection"));
         }
     }
 }
