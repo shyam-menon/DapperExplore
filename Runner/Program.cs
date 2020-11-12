@@ -57,7 +57,8 @@ namespace Runner
 
         //Rename this method to Main and the Main method to xMain  to test this
         // ReSharper disable once ArrangeTypeMemberModifiers
-        static async Task XMain(string[] args)
+        // ReSharper disable once UnusedMember.Local
+        static async Task XMain()
         {
             Initialize();
 
