@@ -3,26 +3,25 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
-using System.Text;
 using System.Transactions;
 using Dapper;
 
 namespace DataLayer
 {
     //Repository for stored procedure
-    public class ContactRepositorySP : IContactRepository
+    public class ContactRepositorySp : IContactRepository
     {
-        private IDbConnection db;
+        private readonly IDbConnection _db;
 
-        public ContactRepositorySP(string connString)
+        public ContactRepositorySp(string connString)
         {
-            this.db = new SqlConnection(connString);
+            this._db = new SqlConnection(connString);
         }
 
         public Contact Find(int id)
         {
             //When using SingleOrDefault, Dapper ignores the ResultSet that does not match the type in the query for e.g. Address is ignored below
-            return this.db.Query<Contact>("GetContact", new { Id = id }, commandType: CommandType.StoredProcedure).SingleOrDefault();
+            return this._db.Query<Contact>("GetContact", new { Id = id }, commandType: CommandType.StoredProcedure).SingleOrDefault();
         }
 
         public List<Contact> GetAll()
@@ -42,12 +41,12 @@ namespace DataLayer
 
         public void Remove(int id)
         {
-            this.db.Execute("DeleteContact", new { Id = id }, commandType: CommandType.StoredProcedure);
+            this._db.Execute("DeleteContact", new { Id = id }, commandType: CommandType.StoredProcedure);
         }
 
         public Contact GetFullContact(int id)
         {
-            using (var multipleResults = this.db.QueryMultiple("GetContact", new { Id = id }, commandType: CommandType.StoredProcedure))
+            using (var multipleResults = this._db.QueryMultiple("GetContact", new { Id = id }, commandType: CommandType.StoredProcedure))
             {
                 var contact = multipleResults.Read<Contact>().SingleOrDefault();
 
@@ -72,7 +71,7 @@ namespace DataLayer
             parameters.Add("@Company", contact.Company);
             parameters.Add("@Title", contact.Title);
             parameters.Add("@Email", contact.Email);
-            this.db.Execute("SaveContact", parameters, commandType: CommandType.StoredProcedure);
+            this._db.Execute("SaveContact", parameters, commandType: CommandType.StoredProcedure);
             contact.Id = parameters.Get<int>("@Id");
 
             foreach (var addr in contact.Addresses.Where(a => !a.IsDeleted))
@@ -89,13 +88,13 @@ namespace DataLayer
                     PostalCode = addr.PostalCode
                 });
                 addrParams.Add("@Id", addr.Id, DbType.Int32, ParameterDirection.InputOutput);
-                this.db.Execute("SaveAddress", addrParams, commandType: CommandType.StoredProcedure);
+                this._db.Execute("SaveAddress", addrParams, commandType: CommandType.StoredProcedure);
                 addr.Id = addrParams.Get<int>("@Id");
             }
 
             foreach (var addr in contact.Addresses.Where(a => a.IsDeleted))
             {
-                this.db.Execute("DeleteAddress", new { Id = addr.Id }, commandType: CommandType.StoredProcedure);
+                this._db.Execute("DeleteAddress", new { Id = addr.Id }, commandType: CommandType.StoredProcedure);
             }
 
             txScope.Complete();

@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Dapper;
 
@@ -11,7 +9,7 @@ namespace DataLayer
 {
     public class ContactRepositoryEx
     {
-        private IDbConnection db;
+        private readonly IDbConnection db;
 
         public ContactRepositoryEx(string connString)
         {

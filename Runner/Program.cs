@@ -297,7 +297,7 @@ namespace Runner
             //return new ContactRepositoryContrib(config.GetConnectionString("DefaultConnection"));
 
             //Using stored procedures
-            return new ContactRepositorySP(_config.GetConnectionString("DefaultConnection"));
+            return new ContactRepositorySp(_config.GetConnectionString("DefaultConnection"));
         }
 
         //Extras repository - IN Operator with WHERE, dynamic usage, bulk insert
