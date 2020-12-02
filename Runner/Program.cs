@@ -16,9 +16,6 @@ namespace Runner
         
         static void Main()
         {
-            //Initialize the connection string
-            Initialize();
-
             //1. Get
             Get_all_should_return_6_results();
 
@@ -291,19 +288,32 @@ namespace Runner
         private static IContactRepository CreateRepository()
         {
             //Using SQL queries
-            //return new ContactRepository(config.GetConnectionString("DefaultConnection"));
+            return new ContactRepository(GetConnectionString());
 
             //Using Dapper Contrib
-            //return new ContactRepositoryContrib(config.GetConnectionString("DefaultConnection"));
+            //return new ContactRepositoryContrib(GetConnectionString());
 
             //Using stored procedures
-            return new ContactRepositorySp(_config.GetConnectionString("DefaultConnection"));
+            //return new ContactRepositorySp(GetConnectionString());
         }
 
         //Extras repository - IN Operator with WHERE, dynamic usage, bulk insert
         private static ContactRepositoryEx CreateRepositoryEx()
         {
-            return new ContactRepositoryEx(_config.GetConnectionString("DefaultConnection"));
+            return new ContactRepositoryEx(GetConnectionString());
+        }
+
+        private static string GetConnectionString()
+        {
+            //Use the connection string from appsettings
+            //Initialize the connection string when fetching from app setting file
+            //Initialize();
+            //var connectionstringAppSettings =  _config.GetConnectionString("DapperDemo");
+
+            //Use connection string from KMS
+            var connectionstringKms = SecretsManager.GetSecret();
+
+            return connectionstringKms;
         }
     }
 }
