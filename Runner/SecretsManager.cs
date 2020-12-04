@@ -10,7 +10,7 @@ namespace Runner
     {
         public static string GetSecret()
         {
-            string secretName = "ConnectionStrings__DapperDemo";
+            string secretName = "DapperDemoConnectionString";
             string region = "us-east-2";
 
             IAmazonSecretsManager client = new AmazonSecretsManagerClient(RegionEndpoint.GetBySystemName(region));
